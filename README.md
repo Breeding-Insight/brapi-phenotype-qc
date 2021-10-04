@@ -5,6 +5,8 @@ The objective of this tool is to streamline routine phenotype QC processes. Inte
 ## Planned Features
 
 ### High priority
+- Load studies from specified BrAPI server
+- Choose study to load observations from
 - View observations vs date plot
     - by variable type
 - Select/filter points
@@ -18,10 +20,11 @@ The objective of this tool is to streamline routine phenotype QC processes. Inte
     - Do not modify raw data study
 
 ### Low priority
-- Export to R data format or spreadsheet for additional QC not available in tool
-- Import from R data format or spreadsheet
+- Export to spreadsheet for additional QC not available in tool
+- Import from spreadsheet
 - View observation units plot
     - Indicate whether observation unit has any observations
     - Select observation unit to show observation details
 - Algorithmic flagging of outliers
+- Auth
 
