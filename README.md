@@ -5,18 +5,18 @@ The objective of this tool is to streamline routine phenotype QC processes. Inte
 ## Planned Features
 
 ### High priority
-- Load studies from specified BrAPI server
-- Choose study to load observations from
-- View observations vs date plot
+- [X] Load studies from specified BrAPI server
+- [X] Choose study to load observations from
+- [ ] View observations vs date plot
     - by variable type
-- Select/filter points
+- [ ] Select/filter points
     - by collector
     - by value range
     - by interactive selection on plot
-- Remove observations
-- Change observation properties
+- [ ] Remove observations
+- [ ] Change observation properties
     - variable
-- Create new QCed study and upload
+- [ ] Create new QCed study and upload
     - Do not modify raw data study
 
 ### Low priority
