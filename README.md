@@ -8,7 +8,8 @@ The objective of this tool is to streamline routine phenotype QC processes. Inte
 - [X] Load studies from specified BrAPI server
 - [X] Choose study to load observations from
 - [ ] View observations vs date plot
-    - by variable type
+    - [X] by study 
+    - [ ] by variable type
 - [ ] Select/filter points
     - by collector
     - by value range
