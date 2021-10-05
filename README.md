@@ -14,7 +14,7 @@ The objective of this tool is to streamline routine phenotype QC processes. Inte
     - [ ] by collector
     - [ ] by value range
     - [X] by interactive selection on plot
-- [ ] Remove observations
+- [X] Remove observations
 - [ ] Change observation properties
     - variable
 - [ ] Create new QCed study and upload
@@ -29,4 +29,4 @@ The objective of this tool is to streamline routine phenotype QC processes. Inte
 - Algorithmic flagging of outliers
 - Auth
 - Error handling
-
+- Layout & styling
