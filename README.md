@@ -7,13 +7,13 @@ The objective of this tool is to streamline routine phenotype QC processes. Inte
 ### High priority
 - [X] Load studies from specified BrAPI server
 - [X] Choose study to load observations from
-- [ ] View observations vs date plot
+- [X] View observations vs date plot
     - [X] by study 
     - [ ] by variable type
-- [ ] Select/filter points
-    - by collector
-    - by value range
-    - by interactive selection on plot
+- [X] Select/filter points
+    - [ ] by collector
+    - [ ] by value range
+    - [X] by interactive selection on plot
 - [ ] Remove observations
 - [ ] Change observation properties
     - variable
@@ -28,4 +28,5 @@ The objective of this tool is to streamline routine phenotype QC processes. Inte
     - Select observation unit to show observation details
 - Algorithmic flagging of outliers
 - Auth
+- Error handling
 
