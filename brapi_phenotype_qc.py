@@ -19,19 +19,31 @@ def get_study_options(studies_dict):
     return list(map(lambda study: {'label': study['studyName'], 'value': study['studyDbId']}, studies_dict))
 
 app.layout = html.Div(id = 'parent', children = [
-    html.H1(id='title', children='BrAPI Phenotype QC', style={'textAlign':'center'}),
+    html.H2(id='title', children='BrAPI Phenotype QC'),
         dcc.Input(id='brapi-url', placeholder='Enter a url...', type='text', value=''),
         html.Button(id='get-studies-button', n_clicks=0, children='Get Studies'),
-        dcc.Dropdown(id='studies-dropdown'),
+        html.Div(children = [
+            html.Label('Select Study:', style={'font-weight': 'bold'}),
+            dcc.Dropdown(id='studies-dropdown'),
+        ]),
+        html.Label('Save New Study:', style={'font-weight': 'bold'}),
+        html.Div(children = [
+            html.Label('Log message:'),
+            dcc.Input(id='change-msg', type='text', size='80'),
+            html.Label('Study name:'),
+            dcc.Input(id='qc-study-name', type='text', size='30'),
+            html.Button(id='save-study-button', n_clicks=0, children='Save New Study'),
+        ]),
         dcc.Graph(id='observations-plot'),
         dcc.Store(id='brapi-url-state'),
         dcc.Store(id='brapi-observations-data'),
         dcc.Store(id='selected-observation-ids'),
         html.Div(id='selected-controls', hidden=True, children = [
-            html.Button('Delete All', id='delete-all-selected'),
+            html.Button('Remove All', id='delete-all-selected'),
             html.Button('Clear Selected', id='clear-selected')
         ]),
-        dt.DataTable(id='observations-table')
+        dt.DataTable(id='observations-table'),
+        html.Div(id='no-output', hidden=True)
     ])
 
 @app.callback([Output('studies-dropdown', 'options'), Output('brapi-url-state', 'data')],
@@ -73,9 +85,10 @@ def display_observations_plot(observations):
         obs_df = brapi_v2.dict_to_dataframe(observations)
         obs_df['value'] = pd.to_numeric(obs_df['value'], errors='coerce')
         fig = px.scatter(obs_df, x='observationTimeStamp', y='value', 
-                         color='observationVariableName', custom_data=['observationDbId'], 
+                         color='observationVariableName', custom_data=['observationDbId'],
+                         marginal_x="box", marginal_y="box",
                          labels={'observationVariableName': 'Variable name'})
-        fig.update_layout(title = 'Observation values over time',
+        fig.update_layout(title = 'Observation values over time with marginal distributions',
                           xaxis_title = 'Date',
                           yaxis_title = 'Value'
                           )
@@ -114,6 +127,28 @@ def display_selected_data(selected_obs_ids, observations, delete_n_clicks):
                 cols=[{'name': i, 'id': i} for i in clean_obs[0].keys()]
                 return cols, clean_obs, False
     return [], [], True
+
+@app.callback(Output('qc-study-name', 'value'),
+              Input('studies-dropdown', 'value'),
+              State('brapi-url-state', 'data'))
+def populate_new_study_name(selected_study, brapi_url):
+    if selected_study:
+        brapi_service = brapi_v2.BrAPIPhenotypeService(brapi_url)
+        study = brapi_service.get_study_by_id(selected_study).data
+        return study['studyName']+' QC'
+    return ''
+
+@app.callback(Output('no-output', 'hidden'),
+              Input('save-study-button', 'n_clicks'),
+              State('brapi-url-state', 'data'),
+              State('change-msg', 'value'),
+              State('studies-dropdown', 'value'),
+              State('qc-study-name', 'value'))
+def save_study(save_study_n_clicks, brapi_url, change_msg, study_id, study_name):
+    if save_study_n_clicks > 0:
+        copy_service = brapi_v2.BrAPICopyService(brapi_url)
+        copy_service.copy_study(study_id, study_name, change_msg)
+    return True
 
 if __name__ == '__main__': 
     app.run_server(debug=True, dev_tools_silence_routes_logging = False)
