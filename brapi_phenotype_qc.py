@@ -12,6 +12,7 @@ from dash.dependencies import Input, Output, State
 import dash_table as dt
 import pandas as pd
 import brapi_v2
+import json
 
 app = dash.Dash()
     
@@ -34,14 +35,27 @@ app.layout = html.Div(id = 'parent', children = [
             dcc.Input(id='qc-study-name', type='text', size='30'),
             html.Button(id='save-study-button', n_clicks=0, children='Save New Study'),
         ]),
+        html.P(),
+        html.Label('Plot Configuration:', style={'font-weight': 'bold'}),
+        html.Div(children = [
+            html.Label('Plot type:'),
+            dcc.Dropdown(id='plot-type-dropdown', options=[
+                {'label': 'Histogram', 'value': 'Histogram'},
+                {'label': 'Scatter Plot', 'value': 'Scatter Plot'}],
+                value='Histogram'
+            ),
+            html.Label('Variable:'),
+            dcc.Dropdown(id='variable-dropdown'),
+        ]),
         dcc.Graph(id='observations-plot'),
         dcc.Store(id='brapi-url-state'),
-        dcc.Store(id='brapi-observations-data'),
+        dcc.Store(id='brapi-observations-data', storage_type='local'),
         dcc.Store(id='selected-observation-ids'),
         html.Div(id='selected-controls', hidden=True, children = [
             html.Button('Remove All', id='delete-all-selected'),
             html.Button('Clear Selected', id='clear-selected')
         ]),
+        
         dt.DataTable(id='observations-table'),
         html.Div(id='no-output', hidden=True)
     ])
@@ -77,38 +91,80 @@ def update_observations(observations, selected_obs_ids, selected_study, brapi_ur
             return filtered_obs
     return []
             
+@app.callback(Output('variable-dropdown', 'options'),
+              State('brapi-url-state', 'data'),
+              Input('studies-dropdown','value'))
+def update_variables(brapi_url, selected_study_id):
+    #TODO: /variables?StudyDbId isn't working on brapi test server so do this for now
+    if selected_study_id:
+        brapi_service = brapi_v2.BrAPIPhenotypeService(brapi_url)
+        obs_data = brapi_service.get_observations_by_study_id(selected_study_id).get_data_list_dict()
+        #TODO: use observationVariableDbId for value
+        variables = list(set(map(lambda obs: obs['observationVariableName'], obs_data)))
+        options = list(map(lambda var: {'label': var, 'value': var}, variables))
+        return options
+    return []
 
 @app.callback(Output(component_id='observations-plot', component_property= 'figure'),
-              Input('brapi-observations-data', 'data'))
-def display_observations_plot(observations):
+              Input('brapi-observations-data', 'data'),
+              Input('variable-dropdown', 'value'),
+              Input('plot-type-dropdown', 'value'))
+def display_observations_plot(observations, variable_name, plot_type):
     if observations:
-        obs_df = brapi_v2.dict_to_dataframe(observations)
-        obs_df['value'] = pd.to_numeric(obs_df['value'], errors='coerce')
-        fig = px.scatter(obs_df, x='observationTimeStamp', y='value', 
-                         color='observationVariableName', custom_data=['observationDbId'],
-                         marginal_x="box", marginal_y="box",
-                         labels={'observationVariableName': 'Variable name'})
-        fig.update_layout(title = 'Observation values over time with marginal distributions',
-                          xaxis_title = 'Date',
-                          yaxis_title = 'Value'
-                          )
-        return fig
+        obs_df = observations_to_df(observations, variable_name)
+            
+        if plot_type == 'Scatter Plot':
+            fig = px.scatter(obs_df, x='observationTimeStamp', y='value',
+                             color='observationVariableName', custom_data=['observationDbId'],
+                             marginal_x="box", marginal_y="box",
+                             labels={'observationVariableName': 'Variable name'})
+            fig.update_layout(title = 'Observation values over time with marginal distributions',
+                              xaxis_title = 'Date',
+                              yaxis_title = 'Value'
+                              )
+            return fig
+        if plot_type == 'Histogram':
+            fig = px.histogram(obs_df, x='value',
+                               color='observationVariableName',
+                               labels={'observationVariableName': 'Variable name'})
+            fig.update_layout(title = 'Observation values histogram',
+                              xaxis_title = 'Value',
+                              yaxis_title = 'Count'
+                              )
+            return fig
     return px.scatter()
 
 @app.callback(Output('selected-observation-ids', 'data'),
               Input('observations-plot', 'selectedData'),
-              Input('clear-selected', 'n_clicks'))
-def update_selected_observations(selected_data, clear_n_clicks):
+              Input('clear-selected', 'n_clicks'),
+              State('brapi-observations-data', 'data'),
+              State('variable-dropdown', 'value'))
+def update_selected_observations(selected_data, clear_n_clicks, observations, variable_name):
     ctx = dash.callback_context
     if ctx.triggered:
         trigger_id = ctx.triggered[0]['prop_id'].split('.')[0]
         if trigger_id == 'clear-selected' and clear_n_clicks and clear_n_clicks > 0:
-            # would also like to clear dcc.Graph selection/highlighting but didn't find ability to
+            #TODO: would also like to clear dcc.Graph selection/highlighting but didn't find ability to
             return []
         if trigger_id == 'observations-plot' and selected_data and len(selected_data['points']) > 0:
-            selected_obs_ids = [data['customdata'][0] for data in selected_data['points']]
-            return selected_obs_ids
+            if 'customdata' in selected_data['points'][0]:
+                selected_obs_ids = [data['customdata'][0] for data in selected_data['points']]
+                return selected_obs_ids
+            if 'pointNumbers' in selected_data['points'][0]:
+                obs_df = observations_to_df(observations, variable_name)
+                point_nums = [data['pointNumbers'] for data in selected_data['points']]
+                flat_point_nums = sum(point_nums, [])
+                obs_df = obs_df.reset_index()
+                selected = obs_df[obs_df.index.isin(flat_point_nums)]
+                selected_obs_ids = selected['observationDbId'].tolist()
+                return selected_obs_ids
     return []
+
+def observations_to_df(observations, variable_name):
+    obs_df = brapi_v2.dict_to_dataframe(observations)
+    obs_df['value'] = pd.to_numeric(obs_df['value'], errors='coerce')
+    obs_df = obs_df[obs_df['observationVariableName'] == variable_name]
+    return obs_df
 
 @app.callback([Output('observations-table', 'columns'),
                Output('observations-table', 'data'),
