@@ -1,6 +1,6 @@
 # BrAPI Phenotype QC Tool
 
-The objective of this tool is to streamline routine phenotype QC processes. Interactive data filtering and viewing can allow faster cleaning of raw data compared to Excel.
+The objective of this tool is to streamline routine phenotype QC processes. Interactive data filtering, viewing, and editing can allow faster cleaning of raw data compared to file export/import workflows.
 
 ## Planned Features
 
