@@ -6,7 +6,6 @@
 
 import requests
 import pandas as pd
-import uuid
 import datetime
 
 def dict_to_dataframe(brapi_dict):
@@ -112,14 +111,17 @@ class BrAPICopyService:
             to_base_url = from_base_url
         self.to_brapi_service = BrAPIPhenotypeService(to_base_url)
         
-    def copy_study(self, study_db_id, new_study_name, changelog = None, link_studies = True):
+    def copy_study(self, study_db_id, new_study_name, changelog = None, 
+                   link_studies = True, link_source = 'phenotype-qc-study-ref'):
         original_study = self.from_brapi_service.get_study_by_id(study_db_id).data
-        if link_studies and not original_study['studyPUI']:
-            original_study['studyPUI'] = str(uuid.uuid4())
-            study_id = original_study['studyDbId']
-            original_study['studyDbId'] = None
-            self.from_brapi_service.put_study_by_id(study_id, original_study)
-        new_study = self.__map_study(original_study, new_study_name)
+        if link_studies:
+            # TODO: update to be queryable
+            new_study = self.__map_study(original_study, new_study_name)
+            new_study['externalReferences'] = [
+                    {"referenceID": original_study['studyDbId'],
+                     "referenceSource": link_source
+                    }
+                ]
         if changelog:
             new_study['lastUpdate'] = {}
             new_study['lastUpdate']['timestamp'] = datetime.datetime.now().astimezone().isoformat()
@@ -131,3 +133,10 @@ class BrAPICopyService:
         new_study['studyDbId'] = None
         new_study['studyName'] = new_study_name
         return new_study
+    
+class BrAPIStudyVersionService:
+    
+    def __init__(self, base_url):
+        self.client = BrAPIClient(base_url)
+        
+    #TODO
