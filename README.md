@@ -7,18 +7,26 @@ The objective of this tool is to streamline routine phenotype QC processes. Inte
 ### High priority
 - [X] Load studies from specified BrAPI server
 - [X] Choose study to load observations from
-- [X] View observations vs date plot
-    - [X] by study 
-    - [ ] by variable type
+- [X] Plot type selection
+    - [X] histogram
+    - [X] scatter plot
+- [X] View plot
+    - [X] by variable type
+    - [ ] configurable axes variables
 - [X] Select/filter points
     - [ ] by collector
     - [ ] by value range
     - [X] by interactive selection on plot
+    - [ ] by interactive number of std dev from mean
+    - [ ] by interquartile range
 - [X] Remove observations
 - [ ] Change observation properties
-    - variable
-- [ ] Create new QCed study and upload
-    - Do not modify raw data study
+    - [ ] variable (dropdown of variables in study)
+    - [ ] value
+- [ ] Create new QCed study and upload (Do not modify raw data study)
+    - [X] study
+    - [ ] observation variables
+    - [ ] observations
 
 ### Low priority
 - Export to spreadsheet for additional QC not available in tool
