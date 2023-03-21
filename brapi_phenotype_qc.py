@@ -64,6 +64,7 @@ app.layout = html.Div(id = 'parent', children = [
               Input('get-studies-button', 'n_clicks'),
               State('brapi-url', 'value'))
 def update_studies(n_clicks, brapi_url):
+    app.logger.info(brapi_url)
     if brapi_url:
         brapi_service = brapi_v2.BrAPIPhenotypeService(brapi_url)
         studies_list_dict = brapi_service.get_studies().get_data_list_dict()
@@ -71,17 +72,18 @@ def update_studies(n_clicks, brapi_url):
     return ([], brapi_url)
 
 @app.callback(Output('brapi-observations-data', 'data'),
+              Input('delete-all-selected', 'n_clicks'),
+              Input(component_id='studies-dropdown', component_property= 'value'),
               State('brapi-observations-data', 'data'),
               State('selected-observation-ids', 'data'),
-              Input(component_id='studies-dropdown', component_property= 'value'),
-              State('brapi-url-state', 'data'),
-              Input('delete-all-selected', 'n_clicks'))
-def update_observations(observations, selected_obs_ids, selected_study, brapi_url, delete_n_clicks): # 
+              State('brapi-url-state', 'data'))
+def update_observations(delete_n_clicks, selected_study, observations, selected_obs_ids, brapi_url): # 
     ctx = dash.callback_context
     if ctx.triggered:
         trigger_id = ctx.triggered[0]['prop_id'].split('.')[0]
         if trigger_id == 'studies-dropdown':
             if selected_study:
+                app.logger.info(brapi_url)
                 brapi_service = brapi_v2.BrAPIPhenotypeService(brapi_url)
                 obs_data = brapi_service.get_observations_by_study_id(selected_study)
                 return obs_data.get_data_list_dict()
@@ -92,9 +94,10 @@ def update_observations(observations, selected_obs_ids, selected_study, brapi_ur
     return []
             
 @app.callback(Output('variable-dropdown', 'options'),
-              State('brapi-url-state', 'data'),
-              Input('studies-dropdown','value'))
-def update_variables(brapi_url, selected_study_id):
+              Input('studies-dropdown','value'),
+              State('brapi-url-state', 'data'))
+def update_variables(selected_study_id, brapi_url):
+    app.logger.info(brapi_url)
     #TODO: /variables?StudyDbId isn't working on brapi test server so do this for now
     if selected_study_id:
         brapi_service = brapi_v2.BrAPIPhenotypeService(brapi_url)
@@ -170,9 +173,9 @@ def observations_to_df(observations, variable_name):
                Output('observations-table', 'data'),
                Output('selected-controls', 'hidden')],
               Input('selected-observation-ids', 'data'),
-              State('brapi-observations-data', 'data'),
-              Input('delete-all-selected', 'n_clicks'))
-def display_selected_data(selected_obs_ids, observations, delete_n_clicks):
+              Input('delete-all-selected', 'n_clicks'),
+              State('brapi-observations-data', 'data'))
+def display_selected_data(selected_obs_ids, delete_n_clicks, observations):
     ctx = dash.callback_context
     if ctx.triggered:
         trigger_id = ctx.triggered[0]['prop_id'].split('.')[0]
